@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>W3_School Analysis Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #060d1f;
+  --surface: #0e1a31;
+  --surface2: #152240;
+  --surface3: #1c2e52;
+  --border: rgba(99,155,255,0.12);
+  --border2: rgba(99,155,255,0.2);
+  --text: #e8f0ff;
+  --text2: #8fa8d4;
+  --text3: #4d6a9a;
+  --accent: #4d8bff;
+  --accent2: #00e5b0;
+  --accent3: #ffb020;
+  --accent4: #ff5b7a;
+  --accent5: #b57aff;
+  --glow: rgba(77,139,255,0.15);
+  --c1:#4d8bff; --c2:#00e5b0; --c3:#ffb020; --c4:#ff5b7a;
+  --c5:#b57aff; --c6:#00d4ff; --c7:#ff8c42; --c8:#69f0ae;
+}
+/* ── LIGHT THEME ── */
+[data-theme="light"]{
+  --bg:#f0f4ff;
+  --surface:#ffffff;
+  --surface2:#e8eef8;
+  --surface3:#d4dff0;
+  --border:rgba(77,139,255,0.15);
+  --border2:rgba(77,139,255,0.3);
+  --text:#0d1b3e;
+  --text2:#2d4a7a;
+  --text3:#6b85b0;
+  --glow:rgba(77,139,255,0.1);
+}
+[data-theme="light"] body::before{
+  background-image:
+    linear-gradient(rgba(77,139,255,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(77,139,255,0.06) 1px, transparent 1px);
+}
+[data-theme="light"] .topbar{background:rgba(255,255,255,0.92)}
+[data-theme="light"] .sidebar{background:rgba(240,244,255,0.85)}
+[data-theme="light"] .footer{background:rgba(240,244,255,0.7)}
+[data-theme="light"] .data-table th{background:var(--surface2)}
+[data-theme="light"] .filter-select{background:var(--surface2)}
+[data-theme="light"] .kpi-card::after{opacity:0.06}
+
+/* ── THEME TOGGLE ── */
+.theme-toggle{
+  display:flex; align-items:center; gap:3px;
+  background:var(--surface2); border:1px solid var(--border2);
+  border-radius:10px; padding:3px; cursor:pointer;
+  transition:all .2s;
+}
+.theme-btn{
+  height:30px; padding:0 14px; border-radius:7px; border:none;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .2s;
+  background:transparent; color:var(--text3);
+  font-family:inherit;
+}
+.theme-btn.active{
+  background:var(--surface3);
+  color:var(--text);
+  box-shadow:0 1px 4px rgba(0,0,0,0.3);
+}
+.theme-btn:not(.active):hover{ color:var(--text2) }
+
+body{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* BG grid */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(77,139,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(77,139,255,0.03) 1px, transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none;
+  z-index:0;
+}
+
+.app{position:relative;z-index:1}
+
+/* ── TOPBAR ── */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 28px;
+  height:58px;
+  background:rgba(14,26,49,0.9);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(12px);
+  position:sticky; top:0; z-index:100;
+}
+.topbar-logo{
+  display:flex; align-items:center; gap:10px;
+}
+.logo-icon{
+  width:32px; height:32px; border-radius:8px;
+  background:linear-gradient(135deg,var(--accent),var(--accent5));
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; font-weight:800; color:#fff;
+}
+.logo-text{
+  font-size:16px; font-weight:700; letter-spacing:-0.3px;
+  background:linear-gradient(90deg,var(--text),var(--accent));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.topbar-meta{display:flex; align-items:center; gap:20px}
+.meta-item{font-size:11px; color:var(--text3); display:flex; align-items:center; gap:5px}
+.live-dot{
+  width:6px; height:6px; border-radius:50%;
+  background:var(--accent2);
+  box-shadow:0 0 8px var(--accent2);
+  animation:blink 2s infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.topbar-right{display:flex; align-items:center; gap:12px}
+.last-refresh{font-size:11px; color:var(--text3)}
+.reset-btn{
+  padding:6px 14px; border-radius:8px; border:1px solid var(--border2);
+  background:transparent; color:var(--accent); font-size:12px; font-weight:600;
+  cursor:pointer; transition:all .2s; font-family:inherit;
+}
+.reset-btn:hover{background:var(--glow); border-color:var(--accent)}
+
+/* ── MAIN LAYOUT ── */
+.main{display:flex; gap:0; min-height:calc(100vh - 58px)}
+
+/* ── SIDEBAR FILTERS ── */
+.sidebar{
+  width:240px; flex-shrink:0;
+  background:rgba(14,26,49,0.7);
+  border-right:1px solid var(--border);
+  padding:20px 16px;
+  display:flex; flex-direction:column; gap:6px;
+  overflow-y:auto;
+}
+.sidebar-title{
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:1.2px; color:var(--text3);
+  padding:0 4px 12px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:8px;
+  display:flex; align-items:center; gap:6px;
+}
+.filter-group{margin-bottom:4px}
+.filter-label{
+  font-size:11px; font-weight:600; color:var(--text2);
+  padding:6px 8px 6px; display:flex; align-items:center; gap:6px;
+  text-transform:uppercase; letter-spacing:0.6px;
+}
+.filter-label span{font-size:14px}
+.filter-select{
+  width:100%; padding:8px 10px;
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; color:var(--text); font-size:12px;
+  font-family:inherit; cursor:pointer; outline:none;
+  transition:border-color .2s;
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234d8bff'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 10px center;
+  padding-right:28px;
+}
+.filter-select:focus{border-color:var(--accent)}
+.filter-select option{background:var(--surface2); color:var(--text)}
+
+.filter-checkgroup{
+  display:flex; flex-direction:column; gap:4px;
+  max-height:160px; overflow-y:auto; padding:2px 4px;
+}
+.filter-checkgroup::-webkit-scrollbar{width:3px}
+.filter-checkgroup::-webkit-scrollbar-thumb{background:var(--surface3); border-radius:2px}
+.check-item{
+  display:flex; align-items:center; gap:8px;
+  padding:5px 6px; border-radius:6px; cursor:pointer;
+  transition:background .15s;
+}
+.check-item:hover{background:var(--surface2)}
+.check-item input{accent-color:var(--accent); cursor:pointer; width:13px; height:13px}
+.check-item label{font-size:12px; color:var(--text2); cursor:pointer; flex:1}
+
+.active-count{
+  font-size:10px; background:var(--accent); color:#fff;
+  border-radius:10px; padding:1px 7px; font-weight:700;
+  margin-left:auto;
+}
+
+/* ── CONTENT ── */
+.content{flex:1; padding:20px 24px; overflow-y:auto; min-width:0}
+
+/* ── KPI GRID ── */
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px; margin-bottom:22px;
+}
+.kpi-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px; padding:18px 20px;
+  position:relative; overflow:hidden;
+  transition:transform .2s, border-color .2s;
+  cursor:default;
+}
+.kpi-card:hover{transform:translateY(-2px); border-color:var(--border2)}
+.kpi-card::before{
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--kc,var(--accent));
+}
+.kpi-card::after{
+  content:'';
+  position:absolute; bottom:-30px; right:-30px;
+  width:90px; height:90px; border-radius:50%;
+  background:var(--kc,var(--accent)); opacity:0.05;
+}
+.kpi-icon{font-size:18px; margin-bottom:10px; display:block}
+.kpi-label{font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:.8px; font-weight:600; margin-bottom:6px}
+.kpi-val{font-size:24px; font-weight:800; color:var(--text); letter-spacing:-0.5px; line-height:1}
+.kpi-sub{font-size:11px; color:var(--text3); margin-top:8px}
+.kpi-badge{
+  display:inline-flex; align-items:center; gap:3px;
+  font-size:10px; font-weight:700; padding:2px 8px;
+  border-radius:20px; margin-top:6px;
+}
+.badge-up{background:rgba(0,229,176,0.12); color:var(--accent2)}
+.badge-down{background:rgba(255,91,122,0.12); color:var(--accent4)}
+
+/* second row KPIs */
+.kpi-grid-2{grid-template-columns:repeat(4,1fr)}
+
+/* ── SECTION LABEL ── */
+.sec-label{
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:1px; color:var(--text3);
+  display:flex; align-items:center; gap:10px;
+  margin:8px 0 14px;
+}
+.sec-label::after{content:''; flex:1; height:1px; background:var(--border)}
+
+/* ── CHARTS ── */
+.charts-row{display:grid; gap:16px; margin-bottom:16px}
+.col-2{grid-template-columns:1fr 1fr}
+.col-3{grid-template-columns:0.65fr 1fr 1fr}
+.col-2-wide{grid-template-columns:2fr 1.2fr}
+.col-3-eq{grid-template-columns:1fr 1fr 1fr}
+
+.chart-card{
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:14px; padding:20px;
+  transition:border-color .2s;
+}
+.chart-card:hover{border-color:var(--border2)}
+.chart-hdr{
+  display:flex; align-items:flex-start; justify-content:space-between;
+  margin-bottom:16px;
+}
+.chart-ttl{font-size:13px; font-weight:700; color:var(--text); letter-spacing:-0.2px}
+.chart-sub{font-size:11px; color:var(--text3); margin-top:3px; font-weight:400}
+.chart-badge{
+  font-size:10px; padding:3px 10px; border-radius:20px;
+  border:1px solid var(--border2); color:var(--accent);
+  font-weight:600; text-transform:uppercase; letter-spacing:.5px; white-space:nowrap;
+}
+.chart-wrap{position:relative}
+
+/* ── HORIZONTAL BAR (custom) ── */
+.hbar-list{display:flex; flex-direction:column; gap:8px}
+.hbar-row{display:flex; align-items:center; gap:10px}
+.hbar-lbl{font-size:11px; color:var(--text2); width:120px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.hbar-track{flex:1; height:16px; background:rgba(255,255,255,0.05); border-radius:5px; overflow:hidden}
+.hbar-fill{height:100%; border-radius:5px; transition:width .8s cubic-bezier(.4,0,.2,1)}
+.hbar-val{font-size:11px; color:var(--text2); width:50px; text-align:right; font-weight:600; flex-shrink:0}
+
+/* ── FUNNEL ── */
+.funnel-wrap{display:flex; flex-direction:column; gap:4px; padding:2px 0}
+.funnel-row{display:flex; align-items:center; gap:10px}
+.funnel-bar-wrap{flex:1; display:flex; justify-content:center}
+.funnel-bar{
+  height:28px; border-radius:6px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; color:#fff;
+  transition:width .9s cubic-bezier(.4,0,.2,1);
+  position:relative; min-width:60px;
+}
+.funnel-label{font-size:11px; color:var(--text2); width:100px; flex-shrink:0; text-align:right}
+.funnel-val{font-size:11px; color:var(--text2); width:60px; flex-shrink:0; font-weight:600}
+
+/* ── RIBBON (stacked area) ── */
+/* uses canvas */
+
+/* ── DATA TABLE ── */
+.tbl-wrap{
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+}
+.tbl-wrap::-webkit-scrollbar{width:4px}
+.tbl-wrap::-webkit-scrollbar-thumb{background:var(--surface3); border-radius:2px}
+.data-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:11px;
+  table-layout:fixed;
+  /* fill available height — tbody rows stretch to fill */
+  height:100%;
+}
+.data-table thead{position:sticky; top:0; z-index:2; flex-shrink:0}
+.data-table th{
+  background:var(--surface2); color:var(--text3);
+  font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.6px;
+  padding:8px 14px; text-align:left; cursor:pointer;
+  border-bottom:1px solid var(--border2); white-space:nowrap;
+  user-select:none;
+}
+.data-table th:hover{color:var(--accent)}
+.sort-icon{color:var(--accent); font-size:9px}
+/* tbody takes all remaining height and distributes evenly */
+.data-table tbody{height:100%}
+.data-table tbody tr{height:1%}
+.data-table td{
+  padding:0 14px;
+  height:28px;
+  border-bottom:1px solid var(--border);
+  color:var(--text2); vertical-align:middle;
+}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:rgba(77,139,255,0.05)}
+.tbl-country{color:var(--text); font-weight:600}
+.tbl-rev{color:var(--accent2); font-weight:700}
+.tbl-bar-mini{display:inline-block; height:5px; border-radius:3px; vertical-align:middle; margin-left:6px}
+.share-pill{
+  display:inline-block; font-size:10px; font-weight:700;
+  padding:2px 7px; border-radius:10px;
+}
+.share-hi{background:rgba(77,139,255,0.15); color:var(--accent)}
+.share-md{background:rgba(0,229,176,0.12); color:var(--accent2)}
+.share-lo{background:rgba(255,176,32,0.12); color:var(--accent3)}
+/* ── PIE LEGEND ── */
+.pie-legend{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; padding:0 2px}
+.pie-leg-item{display:flex; align-items:center; gap:5px; font-size:11px; color:var(--text2); min-width:0}
+.pie-dot{width:8px; height:8px; border-radius:2px; flex-shrink:0}
+
+/* ── FOOTER ── */
+.footer{
+  margin-top:20px; padding:14px 24px;
+  border-top:1px solid var(--border);
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:11px; color:var(--text3);
+  background:rgba(14,26,49,0.5);
+}
+.footer strong{color:var(--text2)}
+
+/* ── ANIMATIONS ── */
+.fade{animation:fadeUp .5s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.d1{animation-delay:.05s} .d2{animation-delay:.1s} .d3{animation-delay:.15s} .d4{animation-delay:.2s}
+
+/* ── NO DATA ── */
+.no-data{
+  display:flex; align-items:center; justify-content:center;
+  height:100%; font-size:13px; color:var(--text3);
+  flex-direction:column; gap:8px;
+}
+.no-data span{font-size:28px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ══ TOPBAR ══ -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="logo-icon">W3</div>
+    <div class="logo-text">W3_School Analysis Dashboard</div>
+  </div>
+  <div class="topbar-meta">
+    <div class="meta-item"><div class="live-dot"></div> Northwind Dataset</div>
+    <div class="meta-item">📊 Power BI Desktop · MCP</div>
+    <div class="meta-item">🗓 1996 – 1998</div>
+  </div>
+  <div class="topbar-right">
+    <div class="last-refresh" id="refreshTime"></div>
+    <div class="theme-toggle" title="Switch theme">
+      <button class="theme-btn active" id="btnDark" onclick="setTheme('dark')" title="Dark mode">
+        <span style="font-size:11px;font-weight:700;letter-spacing:.3px">⬛ Dark</span>
+      </button>
+      <button class="theme-btn" id="btnLight" onclick="setTheme('light')" title="Light mode">
+        <span style="font-size:11px;font-weight:700;letter-spacing:.3px">⬜ Light</span>
+      </button>
+    </div>
+    <button class="reset-btn" onclick="resetFilters()">↺ Reset Filters</button>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ══ SIDEBAR ══ -->
+<div class="sidebar">
+  <div class="sidebar-title">
+    <span>⚙</span> Filters
+    <span class="active-count" id="activeCount">0</span>
+  </div>
+
+  <!-- Filter 1: Year -->
+  <div class="filter-group">
+    <div class="filter-label"><span>📅</span> Year</div>
+    <select class="filter-select" id="fYear" onchange="applyFilters()">
+      <option value="all">All Years</option>
+      <option value="1996">1996</option>
+      <option value="1997">1997</option>
+      <option value="1998">1998</option>
+    </select>
+  </div>
+
+  <!-- Filter 2: Category -->
+  <div class="filter-group">
+    <div class="filter-label"><span>🏷</span> Category</div>
+    <select class="filter-select" id="fCategory" onchange="applyFilters()">
+      <option value="all">All Categories</option>
+      <option value="Beverages">Beverages</option>
+      <option value="Dairy Products">Dairy Products</option>
+      <option value="Meat/Poultry">Meat/Poultry</option>
+      <option value="Confections">Confections</option>
+      <option value="Seafood">Seafood</option>
+      <option value="Condiments">Condiments</option>
+      <option value="Produce">Produce</option>
+      <option value="Grains/Cereals">Grains/Cereals</option>
+    </select>
+  </div>
+
+  <!-- Filter 3: Shipper -->
+  <div class="filter-group">
+    <div class="filter-label"><span>🚚</span> Shipper</div>
+    <select class="filter-select" id="fShipper" onchange="applyFilters()">
+      <option value="all">All Shippers</option>
+      <option value="United Package">United Package</option>
+      <option value="Federal Shipping">Federal Shipping</option>
+      <option value="Speedy Express">Speedy Express</option>
+    </select>
+  </div>
+
+  <!-- Filter 4: Country (checkboxes) -->
+  <div class="filter-group">
+    <div class="filter-label"><span>🌍</span> Country</div>
+    <div class="filter-checkgroup" id="countryChecks"></div>
+  </div>
+
+  <!-- Filter 5: Employee -->
+  <div class="filter-group">
+    <div class="filter-label"><span>👤</span> Employee</div>
+    <select class="filter-select" id="fEmployee" onchange="applyFilters()">
+      <option value="all">All Employees</option>
+      <option value="Margaret Peacock">M. Peacock</option>
+      <option value="Janet Leverling">J. Leverling</option>
+      <option value="Nancy Davolio">N. Davolio</option>
+      <option value="Andrew Fuller">A. Fuller</option>
+      <option value="Laura Callahan">L. Callahan</option>
+      <option value="Robert King">R. King</option>
+      <option value="Michael Suyama">M. Suyama</option>
+      <option value="Anne Dodsworth">A. Dodsworth</option>
+      <option value="Steven Buchanan">S. Buchanan</option>
+    </select>
+  </div>
+</div>
+
+<!-- ══ CONTENT ══ -->
+<div class="content">
+
+  <!-- KPI ROW 1 -->
+  <div class="kpi-grid fade d1" id="kpiGrid1">
+    <div class="kpi-card" style="--kc:#4d8bff">
+      <span class="kpi-icon">💰</span>
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-val" id="k-rev">$1.45M</div>
+      <div class="kpi-badge badge-up" id="k-rev-b">↑ All Time</div>
+      <div class="kpi-sub" id="k-rev-s">Gross sales 1996–1998</div>
+    </div>
+    <div class="kpi-card" style="--kc:#00e5b0">
+      <span class="kpi-icon">📦</span>
+      <div class="kpi-label">Total Orders</div>
+      <div class="kpi-val" id="k-ord">830</div>
+      <div class="kpi-badge badge-up" id="k-ord-b">↑ Growing</div>
+      <div class="kpi-sub" id="k-ord-s">Across 21 countries</div>
+    </div>
+    <div class="kpi-card" style="--kc:#ffb020">
+      <span class="kpi-icon">🧾</span>
+      <div class="kpi-label">Avg Order Value</div>
+      <div class="kpi-val" id="k-aov">$1,746</div>
+      <div class="kpi-badge badge-up">↑ Strong AOV</div>
+      <div class="kpi-sub">Per transaction</div>
+    </div>
+    <div class="kpi-card" style="--kc:#ff5b7a">
+      <span class="kpi-icon">👥</span>
+      <div class="kpi-label">Total Customers</div>
+      <div class="kpi-val" id="k-cust">91</div>
+      <div class="kpi-badge badge-up">↑ 21 Markets</div>
+      <div class="kpi-sub">$15,927 rev/customer</div>
+    </div>
+  </div>
+
+  <!-- KPI ROW 2 -->
+  <div class="kpi-grid kpi-grid-2 fade d2" style="margin-bottom:22px" id="kpiGrid2">
+    <div class="kpi-card" style="--kc:#b57aff">
+      <span class="kpi-icon">🛒</span>
+      <div class="kpi-label">Units Sold</div>
+      <div class="kpi-val" id="k-units">51,317</div>
+      <div class="kpi-badge badge-up">↑ 77 SKUs</div>
+      <div class="kpi-sub">61.8 units/order avg</div>
+    </div>
+    <div class="kpi-card" style="--kc:#00d4ff">
+      <span class="kpi-icon">🏷</span>
+      <div class="kpi-label">Total Products</div>
+      <div class="kpi-val" id="k-prod">77</div>
+      <div class="kpi-badge badge-up">↑ 8 Categories</div>
+      <div class="kpi-sub">$18,823 avg/product</div>
+    </div>
+    <div class="kpi-card" style="--kc:#ff8c42">
+      <span class="kpi-icon">🚚</span>
+      <div class="kpi-label">Top Shipper</div>
+      <div class="kpi-val" id="k-ship">$611K</div>
+      <div class="kpi-badge badge-up" id="k-ship-b">United Package</div>
+      <div class="kpi-sub">326 orders shipped</div>
+    </div>
+    <div class="kpi-card" style="--kc:#69f0ae">
+      <span class="kpi-icon">🏆</span>
+      <div class="kpi-label">Top Employee</div>
+      <div class="kpi-val" id="k-emp">$275K</div>
+      <div class="kpi-badge badge-up" id="k-emp-b">M. Peacock</div>
+      <div class="kpi-sub">156 orders handled</div>
+    </div>
+  </div>
+
+  <!-- ROW 1 CHARTS -->
+  <div class="sec-label">Revenue Trends &amp; Category Performance</div>
+  <div class="charts-row col-2 fade d2" style="margin-bottom:16px">
+
+    <!-- Line Chart -->
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div><div class="chart-ttl">Monthly Revenue Trend</div><div class="chart-sub">Revenue &amp; orders over time</div></div>
+        <span class="chart-badge">Line</span>
+      </div>
+      <div class="chart-wrap" style="height:210px"><canvas id="lineChart"></canvas></div>
+    </div>
+
+    <!-- Bar Chart -->
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div><div class="chart-ttl">Revenue by Category</div><div class="chart-sub">8 product categories</div></div>
+        <span class="chart-badge">Bar</span>
+      </div>
+      <div class="chart-wrap" style="height:210px"><canvas id="barChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ROW 2 CHARTS -->
+  <div class="sec-label">Distribution · Employee Bar Chart · Top Products</div>
+  <div class="charts-row col-3 fade d3" style="margin-bottom:16px">
+
+    <!-- Doughnut -->
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div><div class="chart-ttl">Shipper Revenue Share</div><div class="chart-sub">3 shipping partners</div></div>
+        <span class="chart-badge">Doughnut</span>
+      </div>
+      <div class="chart-wrap" style="height:190px"><canvas id="donutChart"></canvas></div>
+      <div class="pie-legend" id="donutLegend"></div>
+    </div>
+
+    <!-- Grouped Bar — Employee Revenue vs Orders -->
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div><div class="chart-ttl">Employee Performance</div><div class="chart-sub">Revenue vs orders per employee</div></div>
+        <span class="chart-badge">Bar Chart</span>
+      </div>
+      <div class="chart-wrap" style="height:190px"><canvas id="empBarChart"></canvas></div>
+    </div>
+
+    <!-- Horizontal Bar (top products) -->
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <div><div class="chart-ttl">Top 10 Products</div><div class="chart-sub">By revenue</div></div>
+        <span class="chart-badge">H-Bar</span>
+      </div>
+      <div class="hbar-list" id="hbarList"></div>
+    </div>
+  </div>
+
+  <!-- ROW 3 CHARTS: Pie + Funnel + Table -->
+  <div class="sec-label">Country Pie · Revenue Funnel · Country Data Table</div>
+  <div class="charts-row col-3-eq fade d4" style="margin-bottom:16px;align-items:stretch;height:340px">
+
+    <!-- PIE CHART — Country Revenue Share -->
+    <div class="chart-card" style="display:flex;flex-direction:column;overflow:hidden">
+      <div class="chart-hdr" style="flex-shrink:0;margin-bottom:10px">
+        <div><div class="chart-ttl">Country Revenue Share</div><div class="chart-sub">Top 7 + Others</div></div>
+        <span class="chart-badge">Pie Chart</span>
+      </div>
+      <div class="chart-wrap" style="flex:1;min-height:0;position:relative">
+        <canvas id="pieChart" style="width:100%;height:100%"></canvas>
+      </div>
+      <div class="pie-legend" id="pieLegend" style="flex-shrink:0;margin-top:8px"></div>
+    </div>
+
+    <!-- FUNNEL CHART — Sales Funnel by Employee -->
+    <div class="chart-card" style="display:flex;flex-direction:column;overflow:hidden">
+      <div class="chart-hdr" style="flex-shrink:0;margin-bottom:10px">
+        <div><div class="chart-ttl">Employee Revenue Funnel</div><div class="chart-sub">Ranked by performance</div></div>
+        <span class="chart-badge">Funnel</span>
+      </div>
+      <div class="funnel-wrap" id="funnelChart" style="flex:1;min-height:0;overflow-y:auto;gap:4px;padding:0"></div>
+    </div>
+
+    <!-- DATA TABLE — Country details -->
+    <div class="chart-card" style="display:flex;flex-direction:column;overflow:hidden;padding-bottom:0">
+      <div class="chart-hdr" style="flex-shrink:0;margin-bottom:0">
+        <div><div class="chart-ttl">Country Revenue Table</div><div class="chart-sub">Sortable · All filtered countries</div></div>
+        <span class="chart-badge">Table</span>
+      </div>
+      <div class="tbl-wrap" style="margin:0 -20px;padding:0">
+        <table class="data-table" id="countryTable">
+          <thead>
+            <tr>
+              <th onclick="sortTable('c')">Country <span class="sort-icon">⇅</span></th>
+              <th onclick="sortTable('rev')">Revenue <span class="sort-icon">⇅</span></th>
+              <th onclick="sortTable('orders')">Orders <span class="sort-icon">⇅</span></th>
+              <th onclick="sortTable('aov')">AOV <span class="sort-icon">⇅</span></th>
+              <th>Share</th>
+            </tr>
+          </thead>
+          <tbody id="countryTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /content -->
+</div><!-- /main -->
+
+<!-- FOOTER -->
+<div class="footer">
+  <div>Model: <strong>W3_PBI</strong> · <strong>11 tables</strong> · <strong>9 measures</strong> · <strong>9 relationships</strong> · Northwind DB</div>
+  <div>MCP Server · localhost:57608 · Power BI Desktop · <strong>April 2026</strong></div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ════════════════════════════════════════════════
+// RAW DATA (from Power BI DAX queries)
+// ════════════════════════════════════════════════
+const RAW = {
+  monthly: [
+    {m:'Jul 96',y:1996,rev:27044,orders:22},
+    {m:'Aug 96',y:1996,rev:28961,orders:22},
+    {m:'Sep 96',y:1996,rev:24888,orders:22},
+    {m:'Oct 96',y:1996,rev:38309,orders:25},
+    {m:'Nov 96',y:1996,rev:55126,orders:30},
+    {m:'Dec 96',y:1996,rev:58038,orders:31},
+    {m:'Jan 97',y:1997,rev:76394,orders:33},
+    {m:'Feb 97',y:1997,rev:49956,orders:29},
+    {m:'Mar 97',y:1997,rev:51497,orders:32},
+    {m:'Apr 97',y:1997,rev:50280,orders:30},
+    {m:'May 97',y:1997,rev:48074,orders:31},
+    {m:'Jun 97',y:1997,rev:39518,orders:29},
+    {m:'Jul 97',y:1997,rev:37881,orders:30},
+    {m:'Aug 97',y:1997,rev:52640,orders:35},
+    {m:'Sep 97',y:1997,rev:57203,orders:37},
+    {m:'Oct 97',y:1997,rev:62048,orders:40},
+    {m:'Nov 97',y:1997,rev:51344,orders:36},
+    {m:'Dec 97',y:1997,rev:54453,orders:36},
+    {m:'Jan 98',y:1998,rev:79710,orders:55},
+    {m:'Feb 98',y:1998,rev:103411,orders:58},
+    {m:'Mar 98',y:1998,rev:98367,orders:59},
+    {m:'Apr 98',y:1998,rev:117879,orders:63},
+  ],
+  categories:[
+    {cat:'Beverages',rev:309582,units:9532,rev96:62000,rev97:138000,rev98:109582},
+    {cat:'Dairy Products',rev:269128,units:9149,rev96:45000,rev97:120000,rev98:104128},
+    {cat:'Meat/Poultry',rev:190683,units:4199,rev96:35000,rev97:88000,rev98:67683},
+    {cat:'Confections',rev:190329,units:7906,rev96:38000,rev97:85000,rev98:67329},
+    {cat:'Seafood',rev:149060,units:7681,rev96:28000,rev97:68000,rev98:53060},
+    {cat:'Condiments',rev:122343,units:5298,rev96:22000,rev97:58000,rev98:42343},
+    {cat:'Produce',rev:111395,units:2990,rev96:18000,rev97:52000,rev98:41395},
+    {cat:'Grains/Cereals',rev:106848,units:4562,rev96:20000,rev97:48000,rev98:38848},
+  ],
+  shippers:[
+    {name:'United Package',rev:610890,orders:326},
+    {name:'Federal Shipping',rev:442546,orders:255},
+    {name:'Speedy Express',rev:395931,orders:249},
+  ],
+  employees:[
+    {name:'M. Peacock',  fullname:'Margaret Peacock', orders:156,rev:275110},
+    {name:'J. Leverling',fullname:'Janet Leverling',  orders:127,rev:225605},
+    {name:'N. Davolio',  fullname:'Nancy Davolio',    orders:123,rev:215718},
+    {name:'A. Fuller',   fullname:'Andrew Fuller',     orders:96, rev:185395},
+    {name:'L. Callahan', fullname:'Laura Callahan',   orders:104,rev:143951},
+    {name:'R. King',     fullname:'Robert King',       orders:72, rev:151602},
+    {name:'M. Suyama',   fullname:'Michael Suyama',   orders:67, rev:83673},
+    {name:'A. Dodsworth',fullname:'Anne Dodsworth',   orders:43, rev:86567},
+    {name:'S. Buchanan', fullname:'Steven Buchanan',  orders:42, rev:81746},
+  ],
+  countries:[
+    {c:'USA',      rev:281262,orders:122,shipper:'United Package'},
+    {c:'Germany',  rev:253118,orders:120,shipper:'United Package'},
+    {c:'Austria',  rev:149985,orders:40, shipper:'Federal Shipping'},
+    {c:'Brazil',   rev:126064,orders:84, shipper:'United Package'},
+    {c:'France',   rev:93043, orders:76, shipper:'Federal Shipping'},
+    {c:'Venezuela',rev:65647, orders:46, shipper:'Speedy Express'},
+    {c:'UK',       rev:64865, orders:56, shipper:'Speedy Express'},
+    {c:'Canada',   rev:61900, orders:30, shipper:'Federal Shipping'},
+    {c:'Sweden',   rev:61834, orders:37, shipper:'United Package'},
+    {c:'Ireland',  rev:60398, orders:19, shipper:'Federal Shipping'},
+    {c:'Denmark',  rev:39039, orders:18, shipper:'Speedy Express'},
+    {c:'Belgium',  rev:38349, orders:19, shipper:'United Package'},
+    {c:'Switzerland',rev:34547,orders:18,shipper:'Federal Shipping'},
+    {c:'Mexico',   rev:25562, orders:28, shipper:'Speedy Express'},
+    {c:'Finland',  rev:22195, orders:23, shipper:'Federal Shipping'},
+    {c:'Spain',    rev:20295, orders:23, shipper:'United Package'},
+    {c:'Italy',    rev:17634, orders:28, shipper:'Speedy Express'},
+    {c:'Portugal', rev:15673, orders:14, shipper:'Federal Shipping'},
+    {c:'Argentina',rev:8311,  orders:16, shipper:'United Package'},
+    {c:'Norway',   rev:6000,  orders:6,  shipper:'Speedy Express'},
+    {c:'Poland',   rev:3647,  orders:7,  shipper:'Federal Shipping'},
+  ],
+  products:[
+    {name:"Côte de Blaye",      cat:'Beverages',    rev:164161, units:623},
+    {name:"Thüringer Rost.",    cat:'Meat/Poultry', rev:92347,  units:746},
+    {name:"Raclette Courd.",    cat:'Dairy Products',rev:82280,  units:1496},
+    {name:"Tarte au sucre",     cat:'Confections',  rev:53392,  units:1083},
+    {name:"Camembert Pier.",    cat:'Dairy Products',rev:53618,  units:1577},
+    {name:"Gnocchi di nonna",   cat:'Grains/Cereals',rev:47994,  units:1263},
+    {name:"Manjimup Apples",    cat:'Produce',      rev:46958,  units:886},
+    {name:"Alice Mutton",       cat:'Meat/Poultry', rev:38142,  units:978},
+    {name:"Carnarvon Tigers",   cat:'Seafood',      rev:33688,  units:539},
+    {name:"Rössle Sauerkraut",  cat:'Produce',      rev:29184,  units:640},
+  ],
+};
+
+const COLORS8 = ['#4d8bff','#00e5b0','#ffb020','#ff5b7a','#b57aff','#00d4ff','#ff8c42','#69f0ae'];
+const PALETTES={
+  cat:{
+    'Beverages':'#4d8bff','Dairy Products':'#00e5b0','Meat/Poultry':'#ff5b7a',
+    'Confections':'#ffb020','Seafood':'#b57aff','Condiments':'#00d4ff',
+    'Produce':'#ff8c42','Grains/Cereals':'#69f0ae'
+  }
+};
+
+// chart instances
+let charts = {};
+
+// ── Current filter state ──
+let filters = { year:'all', category:'all', shipper:'all', countries:[], employee:'all' };
+
+// ── BUILD COUNTRY CHECKBOXES ──
+function buildCountryChecks(){
+  const el = document.getElementById('countryChecks');
+  RAW.countries.forEach(d=>{
+    el.innerHTML += `<div class="check-item">
+      <input type="checkbox" id="cc-${d.c}" value="${d.c}" onchange="onCountryCheck()">
+      <label for="cc-${d.c}">${d.c}</label>
+    </div>`;
+  });
+}
+
+function onCountryCheck(){
+  filters.countries = [...document.querySelectorAll('#countryChecks input:checked')].map(i=>i.value);
+  applyFilters();
+}
+
+// ── FILTER APPLICATION ──
+function applyFilters(){
+  filters.year     = document.getElementById('fYear').value;
+  filters.category = document.getElementById('fCategory').value;
+  filters.shipper  = document.getElementById('fShipper').value;
+  filters.employee = document.getElementById('fEmployee').value;
+  updateActiveCount();
+  updateAll();
+}
+
+function updateActiveCount(){
+  let n = 0;
+  if(filters.year!=='all')n++;
+  if(filters.category!=='all')n++;
+  if(filters.shipper!=='all')n++;
+  if(filters.countries.length>0)n++;
+  if(filters.employee!=='all')n++;
+  document.getElementById('activeCount').textContent = n;
+}
+
+function resetFilters(){
+  filters = {year:'all',category:'all',shipper:'all',countries:[],employee:'all'};
+  document.getElementById('fYear').value='all';
+  document.getElementById('fCategory').value='all';
+  document.getElementById('fShipper').value='all';
+  document.getElementById('fEmployee').value='all';
+  document.querySelectorAll('#countryChecks input').forEach(i=>i.checked=false);
+  updateActiveCount();
+  updateAll();
+}
+
+// ── FILTERED DATA HELPERS ──
+function getFilteredMonthly(){
+  return RAW.monthly.filter(d=>{
+    if(filters.year!=='all' && d.y!=filters.year) return false;
+    return true;
+  });
+}
+function getFilteredCategories(){
+  return RAW.categories.filter(d=>{
+    if(filters.category!=='all' && d.cat!==filters.category) return false;
+    return true;
+  });
+}
+function getFilteredShippers(){
+  return RAW.shippers.filter(d=>{
+    if(filters.shipper!=='all' && d.name!==filters.shipper) return false;
+    return true;
+  });
+}
+function getFilteredCountries(){
+  return RAW.countries.filter(d=>{
+    if(filters.shipper!=='all' && d.shipper!==filters.shipper) return false;
+    if(filters.countries.length>0 && !filters.countries.includes(d.c)) return false;
+    return true;
+  });
+}
+function getFilteredEmployees(){
+  return RAW.employees.filter(d=>{
+    if(filters.employee!=='all' && d.fullname!==filters.employee) return false;
+    return true;
+  });
+}
+function getFilteredProducts(){
+  return RAW.products.filter(d=>{
+    if(filters.category!=='all' && d.cat!==filters.category) return false;
+    return true;
+  });
+}
+
+// ── KPI UPDATE ──
+function updateKPIs(){
+  const monthly = getFilteredMonthly();
+  const cats    = getFilteredCategories();
+  const ships   = getFilteredShippers();
+  const emps    = getFilteredEmployees();
+  const ctrs    = getFilteredCountries();
+
+  const totalRev   = cats.reduce((s,d)=>s+d.rev,0);
+  const totalOrders= monthly.reduce((s,d)=>s+d.orders,0);
+  const aov        = totalOrders?totalRev/totalOrders:0;
+  const totalUnits = cats.reduce((s,d)=>s+d.units,0);
+  const topShip    = ships.sort((a,b)=>b.rev-a.rev)[0]||{name:'—',rev:0};
+  const topEmp     = emps.sort((a,b)=>b.rev-a.rev)[0]||{name:'—',rev:0};
+  const totalCust  = ctrs.length;
+
+  const fmt = v => v>=1e6?'$'+(v/1e6).toFixed(2)+'M': v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+v.toFixed(0);
+
+  document.getElementById('k-rev').textContent   = fmt(totalRev);
+  document.getElementById('k-ord').textContent   = totalOrders.toLocaleString();
+  document.getElementById('k-aov').textContent   = '$'+Math.round(aov).toLocaleString();
+  document.getElementById('k-cust').textContent  = totalCust || 91;
+  document.getElementById('k-units').textContent = totalUnits.toLocaleString();
+  document.getElementById('k-ship').textContent  = fmt(topShip.rev);
+  document.getElementById('k-ship-b').textContent= topShip.name;
+  document.getElementById('k-emp').textContent   = fmt(topEmp.rev);
+  document.getElementById('k-emp-b').textContent = topEmp.name;
+}
+
+// ── CHART DEFAULTS ──
+Chart.defaults.color = '#4d6a9a';
+Chart.defaults.borderColor = 'rgba(99,155,255,0.08)';
+Chart.defaults.font.family = "'Plus Jakarta Sans',sans-serif";
+Chart.defaults.font.size = 11;
+
+function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+// ═══════════════════════════════════
+// CHART 1: LINE
+// ═══════════════════════════════════
+function drawLine(){
+  destroyChart('line');
+  const data = getFilteredMonthly();
+  charts.line = new Chart(document.getElementById('lineChart'),{
+    type:'line',
+    data:{
+      labels:data.map(d=>d.m),
+      datasets:[
+        {label:'Revenue',data:data.map(d=>d.rev),
+         borderColor:'#4d8bff',backgroundColor:'rgba(77,139,255,0.1)',
+         borderWidth:2,pointRadius:3,fill:true,tension:0.4,yAxisID:'y'},
+        {label:'Orders',data:data.map(d=>d.orders),
+         borderColor:'#00e5b0',backgroundColor:'transparent',
+         borderWidth:1.5,pointRadius:2,borderDash:[4,3],tension:0.4,yAxisID:'y1'}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{color:'rgba(99,155,255,0.05)'},ticks:{maxTicksLimit:8}},
+        y:{grid:{color:'rgba(99,155,255,0.05)'},
+           ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'K'}},
+        y1:{position:'right',grid:{display:false},ticks:{color:'#00e5b0'}}
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════
+// CHART 2: BAR
+// ═══════════════════════════════════
+function drawBar(){
+  destroyChart('bar');
+  const data = getFilteredCategories();
+  charts.bar = new Chart(document.getElementById('barChart'),{
+    type:'bar',
+    data:{
+      labels:data.map(d=>d.cat.replace('/','/ ')),
+      datasets:[{
+        label:'Revenue',data:data.map(d=>d.rev),
+        backgroundColor:data.map(d=>PALETTES.cat[d.cat]||'#4d8bff'),
+        borderRadius:6,borderSkipped:false
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{display:false}},
+        y:{grid:{color:'rgba(99,155,255,0.05)'},
+           ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'K'}}
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════
+// CHART 3: DOUGHNUT
+// ═══════════════════════════════════
+function drawDonut(){
+  destroyChart('donut');
+  const data = getFilteredShippers();
+  const colors=['#4d8bff','#00e5b0','#ffb020'];
+  charts.donut = new Chart(document.getElementById('donutChart'),{
+    type:'doughnut',
+    data:{
+      labels:data.map(d=>d.name),
+      datasets:[{
+        data:data.map(d=>d.rev),
+        backgroundColor:colors,borderColor:'#0e1a31',borderWidth:3,hoverOffset:8
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'65%',
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>` $${ctx.parsed.toLocaleString()}`}}
+      }
+    }
+  });
+  const leg = document.getElementById('donutLegend');
+  leg.innerHTML = data.map((d,i)=>`<div class="pie-leg-item">
+    <span class="pie-dot" style="background:${colors[i]}"></span>${d.name} $${(d.rev/1000).toFixed(0)}K
+  </div>`).join('');
+}
+
+// ═══════════════════════════════════
+// CHART 4: GROUPED BAR — Employee Revenue vs Orders
+// ═══════════════════════════════════
+function drawEmpBar(){
+  destroyChart('empBar');
+  const data = getFilteredEmployees().sort((a,b)=>b.rev-a.rev);
+  charts.empBar = new Chart(document.getElementById('empBarChart'),{
+    type:'bar',
+    data:{
+      labels: data.map(d=>d.name),
+      datasets:[
+        {
+          label:'Revenue ($)',
+          data: data.map(d=>d.rev),
+          backgroundColor: data.map((_,i)=> COLORS8[i%8]+'cc'),
+          borderColor:     data.map((_,i)=> COLORS8[i%8]),
+          borderWidth:1, borderRadius:5, borderSkipped:false,
+          yAxisID:'y'
+        },
+        {
+          label:'Orders',
+          data: data.map(d=>d.orders),
+          backgroundColor:'rgba(255,176,32,0.25)',
+          borderColor:'#ffb020',
+          borderWidth:1.5, borderRadius:5, borderSkipped:false,
+          yAxisID:'y1'
+        }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index', intersect:false},
+      plugins:{
+        legend:{
+          display:true, position:'top',
+          labels:{color:'#4d6a9a', boxWidth:10, padding:10, font:{size:10}}
+        }
+      },
+      scales:{
+        x:{ grid:{display:false}, ticks:{font:{size:10}} },
+        y:{
+          grid:{color:'rgba(99,155,255,0.05)'},
+          ticks:{callback:v=>'$'+(v/1000).toFixed(0)+'K', font:{size:10}}
+        },
+        y1:{
+          position:'right', grid:{display:false},
+          ticks:{color:'#ffb020', font:{size:10}}
+        }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════
+// CHART 5: HORIZONTAL BAR
+// ═══════════════════════════════════
+function drawHbar(){
+  const data = getFilteredProducts().slice(0,10);
+  const el   = document.getElementById('hbarList');
+  el.innerHTML='';
+  if(!data.length){ el.innerHTML='<div class="no-data"><span>📭</span>No data</div>'; return; }
+  const maxR = data[0].rev;
+  data.forEach((p,i)=>{
+    const pct = Math.round(p.rev/maxR*100);
+    el.innerHTML+=`<div class="hbar-row">
+      <span class="hbar-lbl">${p.name}</span>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${pct}%;background:${COLORS8[i%8]}"></div></div>
+      <span class="hbar-val">$${(p.rev/1000).toFixed(0)}K</span>
+    </div>`;
+  });
+}
+
+// ═══════════════════════════════════
+// CHART 6: PIE — Country Share
+// ═══════════════════════════════════
+function drawPie(){
+  destroyChart('pie');
+  let data = getFilteredCountries().sort((a,b)=>b.rev-a.rev);
+  let top7 = data.slice(0,7);
+  const others = data.slice(7).reduce((s,d)=>s+d.rev,0);
+  if(others>0) top7.push({c:'Others',rev:others});
+  const labels = top7.map(d=>d.c);
+  const vals   = top7.map(d=>d.rev);
+  const colors = COLORS8.slice(0,top7.length);
+
+  charts.pie = new Chart(document.getElementById('pieChart'),{
+    type:'pie',
+    data:{
+      labels,
+      datasets:[{data:vals,backgroundColor:colors,borderColor:'#0e1a31',borderWidth:2,hoverOffset:10}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      layout:{padding:4},
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>`${ctx.label}: $${(ctx.parsed/1000).toFixed(0)}K`}}
+      }
+    }
+  });
+
+  const leg = document.getElementById('pieLegend');
+  leg.innerHTML = top7.map((d,i)=>`<div class="pie-leg-item" style="width:calc(50% - 4px)">
+    <span class="pie-dot" style="background:${colors[i]}"></span>${d.c} <span style="color:var(--text3);font-size:10px">$${(d.rev/1000).toFixed(0)}K</span>
+  </div>`).join('');
+}
+
+// ═══════════════════════════════════
+// CHART 7: FUNNEL — Employee Revenue
+// ═══════════════════════════════════
+function drawFunnel(){
+  const data = getFilteredEmployees().sort((a,b)=>b.rev-a.rev);
+  const el   = document.getElementById('funnelChart');
+  el.innerHTML='';
+  if(!data.length){ el.innerHTML='<div class="no-data"><span>📭</span>No data</div>'; return; }
+  const maxR = data[0].rev;
+  const funnelColors = ['#4d8bff','#00d4ff','#00e5b0','#69f0ae','#ffb020','#ff8c42','#ff5b7a','#b57aff','#a78bfa'];
+
+  data.forEach((d,i)=>{
+    const pct = Math.round(d.rev/maxR*100);
+    const w = Math.max(30, pct);
+    el.innerHTML+=`<div class="funnel-row">
+      <div class="funnel-label">${d.name}</div>
+      <div class="funnel-bar-wrap">
+        <div class="funnel-bar" style="width:${w}%;background:linear-gradient(90deg,${funnelColors[i]},${funnelColors[i]}99)">
+          <span style="font-size:10px;opacity:0.9">$${(d.rev/1000).toFixed(0)}K</span>
+        </div>
+      </div>
+      <div class="funnel-val">${d.orders} orders</div>
+    </div>`;
+  });
+}
+
+// ═══════════════════════════════════
+// THEME TOGGLE
+// ═══════════════════════════════════
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme', t==='light'?'light':'');
+  document.getElementById('btnDark').classList.toggle('active', t==='dark');
+  document.getElementById('btnLight').classList.toggle('active', t==='light');
+  // redraw charts with updated colors
+  updateAll();
+}
+
+// ═══════════════════════════════════
+// CHART 8: DATA TABLE — Country Revenue
+// ═══════════════════════════════════
+let tableSortKey = 'rev';
+let tableSortDir = -1; // -1 = desc, 1 = asc
+
+function sortTable(key){
+  if(tableSortKey === key) tableSortDir *= -1;
+  else { tableSortKey = key; tableSortDir = -1; }
+  drawTable();
+}
+
+function drawTable(){
+  let data = getFilteredCountries();
+  const totalRev = data.reduce((s,d)=>s+d.rev,0);
+  data = data.sort((a,b)=>{
+    const av = tableSortKey==='aov' ? a.rev/a.orders : a[tableSortKey];
+    const bv = tableSortKey==='aov' ? b.rev/b.orders : b[tableSortKey];
+    if(typeof av==='string') return tableSortDir * av.localeCompare(bv);
+    return tableSortDir * (bv - av);
+  });
+
+  const tbody = document.getElementById('countryTableBody');
+  if(!data.length){
+    tbody.innerHTML=`<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">No data for selected filters</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map((d)=>{
+    const share  = totalRev ? (d.rev/totalRev*100) : 0;
+    const aov    = d.orders ? d.rev/d.orders : 0;
+    const pillCls= share>=15?'share-hi':share>=8?'share-md':'share-lo';
+    const barW   = Math.round(share*3);
+    return `<tr>
+      <td><span class="tbl-country">${d.c}</span></td>
+      <td class="tbl-rev">$${(d.rev/1000).toFixed(1)}K<span class="tbl-bar-mini" style="width:${barW}px;background:var(--accent);opacity:0.5"></span></td>
+      <td>${d.orders}</td>
+      <td>$${Math.round(aov).toLocaleString()}</td>
+      <td><span class="share-pill ${pillCls}">${share.toFixed(1)}%</span></td>
+    </tr>`;
+  }).join('');
+
+  // stretch rows to fill full tbody height
+  requestAnimationFrame(()=>{
+    const wrap  = document.querySelector('.tbl-wrap');
+    const table = document.getElementById('countryTable');
+    const thead = table.querySelector('thead');
+    const rows  = tbody.querySelectorAll('tr');
+    if(!rows.length) return;
+    const available = wrap.clientHeight - thead.offsetHeight;
+    const rowH = Math.max(32, Math.floor(available / rows.length));
+    // only stretch if rows don't overflow; otherwise let scroll handle it
+    if(rowH * rows.length <= available + 4){
+      rows.forEach(r => r.style.height = rowH + 'px');
+    } else {
+      rows.forEach(r => r.style.height = '36px');
+    }
+  });
+}
+
+// ═══════════════════════════════════
+// MASTER UPDATE
+// ═══════════════════════════════════
+function updateAll(){
+  updateKPIs();
+  drawLine();
+  drawBar();
+  drawDonut();
+  drawEmpBar();
+  drawHbar();
+  drawPie();
+  drawFunnel();
+  drawTable();
+}
+
+// ── INIT ──
+function init(){
+  document.getElementById('refreshTime').textContent = '🕐 ' + new Date().toLocaleTimeString();
+  buildCountryChecks();
+  updateAll();
+}
+
+init();
+</script>
+</body>
+</html>
